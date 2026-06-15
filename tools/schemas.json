@@ -1,0 +1,19 @@
+{
+    "tools": [
+        {
+            "type": "function",
+            "name": "list_files_in_dir",
+            "description": "List of files in a directory",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "directory": {
+                        "type": "string",
+                        "description": "The directory to list files from"
+                    }
+                },
+                "required": ["directory"]
+            }
+        }
+    ]
+}
