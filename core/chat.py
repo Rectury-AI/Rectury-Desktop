@@ -3,6 +3,8 @@ import json
 from core.tool_runner import run_tool
 from core.client import create_client
 
+from ui.terminal import ask_user, show_assistant_message
+
 def load_tools():
     with open("tools/schemas.json", "r", encoding="utf-8") as f:
         return json.load(f)["tools"]
@@ -16,7 +18,7 @@ def run_chat():
     ]
 
     while True:
-        user_input = input("Tú: ").strip()
+        user_input = ask_user()
 
         if user_input.lower() == "exit":
             break
@@ -46,5 +48,6 @@ def run_chat():
                     input=messages,
                     tools=tools
                 )
-        print(f"Rectury: {response.output_text}")
+
+        show_assistant_message(response.output_text)
         messages.append({"role": "assistant", "content": response.output_text})
