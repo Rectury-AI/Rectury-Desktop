@@ -1,4 +1,4 @@
-from core.chat import run_chat
+from ui.terminal import RecturyApp
 
 if __name__ == "__main__":
-    run_chat()
+    RecturyApp().run()
