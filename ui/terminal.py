@@ -21,12 +21,20 @@ class RecturyApp(App):
 
     @work(thread=True)
     def send_message_in_background(self, user_message, thinking_label, spinner_timer):
-        assistant_message = self.chat_session.send_message(user_message)
-        spinner_timer.stop()
-        thinking_label.update(assistant_message)
+        assistant_message = ""
+        started = False
+
+        for chunk in self.chat_session.send_message(user_message):
+            if not started:
+                started = True
+                self.call_from_thread(spinner_timer.stop)
+
+            assistant_message += chunk
+            self.call_from_thread(thinking_label.update, assistant_message)
 
         chat = self.query_one("#chat", VerticalScroll)
-        chat.scroll_end(animate=False)
+        self.call_from_thread(spinner_timer.stop)
+        self.call_from_thread(chat.scroll_end, animate=False)
 
     def update_spinner(self, thinking_label):
         frame = self.SPINNER_FRAMES[self.spinner_index]
@@ -51,7 +59,6 @@ class RecturyApp(App):
             0.08,
             lambda: self.update_spinner(thinking_label),
         )
-        chat.mount(thinking_label)
 
         chat.scroll_end(animate=False)
 
