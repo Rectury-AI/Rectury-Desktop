@@ -175,7 +175,7 @@ action, but local code remains responsible for what actually runs.
 
 Rectury is early, so focused contributions can have a meaningful impact.
 Bug reports, architecture discussions, new tools, and UI improvements are
-welcome.
+welcome
 
 1. Fork the repository.
 2. Create a feature branch.
