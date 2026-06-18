@@ -32,6 +32,7 @@ class RecturyApp(App):
                 id="welcome-note",
             ),
             Label(" "),
+            Label("New conversation", id="conversation-title"),
             Label("Workspace", id="agent-name"),
             Label(f"~ {Path.cwd()}", id="status"),
             id="welcome-panel",
@@ -70,6 +71,10 @@ class RecturyApp(App):
 
         chat = self.query_one("#chat", VerticalScroll)
         self.call_from_thread(spinner_timer.stop)
+        self.call_from_thread(
+            self.query_one("#conversation-title", Label).update,
+            self.chat_session.title,
+        )
         self.call_from_thread(chat.scroll_end, animate=False)
 
     def update_spinner(self, thinking_label):
@@ -125,4 +130,22 @@ class RecturyApp(App):
 
     def on_mount(self) -> None:
         self.chat_session = ChatSession()
+        self.query_one("#conversation-title", Label).update(
+            self.chat_session.title
+        )
+
+        chat = self.query_one("#chat", VerticalScroll)
+
+        for message in self.chat_session.messages:
+            content = message.get("content")
+
+            if not content:
+                continue
+
+            if message["role"] == "user":
+                chat.mount(Label(content, classes="user-message"))
+            elif message["role"] == "assistant":
+                chat.mount(Label(content, classes="assistant-message"))
+
+        chat.scroll_end(animate=False)
         self.query_one("#message-input", TextArea).focus()

@@ -27,6 +27,7 @@ Rectury provides a clean, keyboard-first interface built with Textual.
 - JSON tool schemas and a Python tool registry
 - Extensible tool implementations
 - Local environment configuration
+- Local conversation history with generated titles
 
 The first available tool, `list_files_in_dir`, lets Rectury inspect the
 contents of a directory. More filesystem and computer-control tools are
@@ -100,7 +101,7 @@ Rectury-Desktop/
 ├── core/
 │   ├── chat.py              Agent loop, streaming, and tool calls
 │   ├── client.py            Model provider configuration
-│   ├── conversation_store.py
+│   ├── conversation_store.py Local JSON conversation storage
 │   └── tool_runner.py       Local tool dispatch
 ├── tools/
 │   ├── functions/           Tool implementations
@@ -118,13 +119,16 @@ Rectury-Desktop/
 The goal is broader than chat: Rectury is being built toward a local-first
 agent that can help operate and automate a personal computer.
 
+Conversations are stored as JSON files in `~/.rectury/conversations/`. Rectury
+automatically resumes the most recently updated conversation when it starts.
+
 Planned areas include:
 
 - More filesystem tools for reading, searching, creating, copying, and moving
   files
 - Permission prompts for sensitive actions
 - Structured tool results and clearer execution status
-- Persistent conversation history
+- Conversation browsing and creating new sessions from the interface
 - Desktop and browser automation
 - Repeatable multi-step workflows
 
