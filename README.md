@@ -18,17 +18,6 @@ Rectury provides a clean, keyboard-first interface built with Textual.
 
 ![Rectury chat interface responding to a greeting](docs/images/rectury-chat-demo.png)
 
-### Let Rectury Use Tools
-
-The model does not access your system directly. It requests a defined tool,
-local Python code executes it, and the result is returned to the conversation.
-
-![Rectury using a tool to inspect files in the current workspace](docs/images/rectury-tool-use-demo.png)
-
-```text
-You ask -> Model chooses a tool -> Rectury runs it -> Model responds
-```
-
 ## What Works Today
 
 - Interactive terminal interface
@@ -103,20 +92,6 @@ AI_BASE_URL=http://localhost:11434/v1
 python3 agent.py
 ```
 
-## How Tools Work
-
-Adding a tool currently involves three small pieces:
-
-```text
-tools/
-├── schemas.json       Describes tools to the model
-├── registry.py        Connects tool names to Python functions
-└── functions/         Contains the implementations
-```
-
-This separation keeps tool execution inspectable: the model can request an
-action, but local code remains responsible for what actually runs.
-
 ## Project Structure
 
 ```text
@@ -168,6 +143,29 @@ The project is moving toward:
 - Local execution boundaries that remain easy to inspect
 
 Only run Rectury inside projects and directories you trust.
+
+## How Tools Work
+
+The model does not access your system directly. It requests a defined tool,
+local Python code executes it, and the result is returned to the conversation.
+
+![Rectury using a tool to inspect files in the current workspace](docs/images/rectury-tool-use-demo.png)
+
+```text
+You ask -> Model chooses a tool -> Rectury runs it -> Model responds
+```
+
+Adding a tool currently involves three small pieces:
+
+```text
+tools/
+├── schemas.json       Describes tools to the model
+├── registry.py        Connects tool names to Python functions
+└── functions/         Contains the implementations
+```
+
+This separation keeps tool execution inspectable: the model can request an
+action, but local code remains responsible for what actually runs.
 
 ## Contributing
 
