@@ -1,212 +1,185 @@
 # Rectury
 
-Rectury is an open-source, terminal-first personal computer agent. It connects a language model to a controlled Python tool system so users can ask for work in natural language, see the assistant reason and respond in real time, and gradually automate local computer tasks through explicit tools.
+**Talk to your computer from the terminal.**
 
-Rectury is not designed to be just another coding agent. The long-term goal is to become a general-purpose Personal Computer Agent capable of understanding, operating, and automating tasks across the entire computer.
+Rectury is an open-source personal computer agent that connects a language
+model to a controlled set of local tools. Ask for something in natural
+language, watch the response stream in real time, and let the agent use
+explicit tools when the task requires action.
 
-Rectury is currently early-stage. The focus is the core agent loop: streaming responses, tool calling, tool execution, and a clean Textual-based terminal interface.
+> Rectury is experimental and under active development. Its APIs and internal
+> structure may change while the core agent becomes more capable.
 
-## Why Rectury
+## See It in Action
 
-Most AI assistants can explain how to do something, but they do not operate your computer through a clear, inspectable tool layer. Rectury is built around a simple idea:
+### Start a Conversation
+
+Rectury provides a clean, keyboard-first interface built with Textual.
+
+![Rectury chat interface responding to a greeting](docs/images/rectury-chat-demo.png)
+
+### Let Rectury Use Tools
+
+The model does not access your system directly. It requests a defined tool,
+local Python code executes it, and the result is returned to the conversation.
+
+![Rectury using a tool to inspect files in the current workspace](docs/images/rectury-tool-use-demo.png)
 
 ```text
-User request -> Model -> Tool call -> Local tool -> Tool result -> Model response
+You ask -> Model chooses a tool -> Rectury runs it -> Model responds
 ```
 
-The long-term goal is not just chat. Rectury is intended to become a local-first computer agent that can help with files, applications, browser workflows, development tasks, and repeatable personal automation while keeping the user in control.
+## What Works Today
 
-## Long-Term Vision
-
-Rectury is being built as a Personal Computer Agent.
-
-The goal is to move beyond chat and enable users to operate their computers through natural language.
-
-Future capabilities may include:
-
-- File management
-- Application control
-- Browser automation
-- Development workflows
-- Communication tools
-- Local automation
-- Task planning and execution
-
-## Core Principles
-
-Rectury is built around a few core ideas:
-
-- Local-first whenever possible
-- Transparent tool execution
-- User-controlled permissions
-- Extensible architecture
-- Provider independence
-- Open source by default
-
-## Current Features
-
-- Textual terminal interface
+- Interactive terminal interface
 - Streaming assistant responses
-- OpenAI-compatible multi-provider client
-- Tool schemas loaded from JSON
-- Tool dispatch through a Python registry
-- Local `.env` configuration
-- Extensible `tools/functions` structure
-- MIT licensed
+- Multi-step tool calls
+- OpenAI-compatible model providers
+- JSON tool schemas and a Python tool registry
+- Extensible tool implementations
+- Local environment configuration
 
-## Model Providers
+The first available tool, `list_files_in_dir`, lets Rectury inspect the
+contents of a directory. More filesystem and computer-control tools are
+planned.
 
-Rectury supports any provider that exposes an OpenAI-compatible API. Provider
-configuration is read directly from four environment variables.
+## Quick Start
 
-## Current Tooling
-
-Rectury currently includes a growing collection of local tools. The initial focus is filesystem operations and agent infrastructure.
-
-Tools are defined in three places:
-
-- `tools/schemas.json`: exposes the tool schema to the model.
-- `tools/registry.py`: maps tool names to Python functions.
-- `tools/functions/`: contains the actual tool implementations.
-
-Current example:
-
-- `list_files_in_dir`: lists files in a given directory.
-
-## Current Development Stage
-
-Rectury is currently focused on building the agent foundation:
-
-- Streaming responses
-- Tool calling
-- Tool execution
-- Tool registry
-- Terminal UI
-
-Desktop automation, browser control, and advanced workflows are planned for future releases.
-
-## Requirements
-
-- Python 3.10+
-- An API key for your selected provider, or a local Ollama installation
-
-## Installation
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/rectury.git
+git clone https://github.com/Rectury-AI/Rectury-Desktop.git
 cd Rectury-Desktop
+```
+
+### 2. Create the Environment
+
+Rectury requires Python 3.10 or newer.
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 ```
 
-## Configuration
+On Windows, activate the environment with:
 
-Create a local environment file:
+```powershell
+.venv\Scripts\activate
+```
+
+### 3. Configure a Model
+
+Copy the example configuration:
 
 ```bash
 cp .env.example .env
 ```
 
-Configure these four values:
+Then edit `.env`:
 
 ```env
-AI_PROVIDER=xai
-AI_MODEL=grok-4.3
-AI_API_KEY=your_api_key_here
-AI_BASE_URL=https://api.x.ai/v1
-```
-
-Examples:
-
-```env
-# OpenAI
 AI_PROVIDER=openai
 AI_MODEL=your-model-name
-AI_API_KEY=your_api_key_here
+AI_API_KEY=your-api-key
 AI_BASE_URL=https://api.openai.com/v1
+```
 
-# OpenRouter
-AI_PROVIDER=openrouter
-AI_MODEL=provider/model-name
-AI_API_KEY=your_api_key_here
-AI_BASE_URL=https://openrouter.ai/api/v1
+Rectury works with providers that expose an OpenAI-compatible API, including
+OpenAI, OpenRouter, xAI, and local Ollama models.
 
-# Local Ollama
+For Ollama, a configuration can look like this:
+
+```env
 AI_PROVIDER=ollama
 AI_MODEL=qwen3
 AI_API_KEY=ollama
 AI_BASE_URL=http://localhost:11434/v1
 ```
 
-`AI_PROVIDER` is used for identification and UI state. Requests are sent
-directly to `AI_BASE_URL` using `AI_MODEL` and `AI_API_KEY`.
-
-## Usage
+### 4. Run Rectury
 
 ```bash
 python3 agent.py
 ```
 
+## How Tools Work
+
+Adding a tool currently involves three small pieces:
+
+```text
+tools/
+├── schemas.json       Describes tools to the model
+├── registry.py        Connects tool names to Python functions
+└── functions/         Contains the implementations
+```
+
+This separation keeps tool execution inspectable: the model can request an
+action, but local code remains responsible for what actually runs.
+
 ## Project Structure
 
 ```text
-core/
-  chat.py             Agent loop and streaming/tool handling
-  client.py           OpenAI-compatible provider configuration
-  tool_runner.py      Tool dispatch logic
-
-tools/
-  schemas.json        Tool definitions visible to the model
-  registry.py         Python tool registry
-  functions/          Tool implementations
-
-ui/
-  terminal.py         Textual chat interface
-  theme.py            Terminal styling
-
-agent.py              Application entry point
+Rectury-Desktop/
+├── agent.py                 Application entry point
+├── core/
+│   ├── chat.py              Agent loop, streaming, and tool calls
+│   ├── client.py            Model provider configuration
+│   ├── conversation_store.py
+│   └── tool_runner.py       Local tool dispatch
+├── tools/
+│   ├── functions/           Tool implementations
+│   ├── registry.py
+│   └── schemas.json
+├── ui/
+│   ├── components.py
+│   ├── terminal.py          Textual interface
+│   └── theme.py
+└── docs/images/             README screenshots
 ```
+
+## Where Rectury Is Going
+
+The goal is broader than chat: Rectury is being built toward a local-first
+agent that can help operate and automate a personal computer.
+
+Planned areas include:
+
+- More filesystem tools for reading, searching, creating, copying, and moving
+  files
+- Permission prompts for sensitive actions
+- Structured tool results and clearer execution status
+- Persistent conversation history
+- Desktop and browser automation
+- Repeatable multi-step workflows
 
 ## Safety Direction
 
-Rectury should keep the model separate from direct system control. The model can request a tool, but local Python code decides what actually runs.
+Rectury is designed around an explicit boundary between the model and the
+system. The model proposes tool calls; trusted local code validates and
+executes them.
 
-Planned safety principles:
+The project is moving toward:
 
-- explicit tool schemas
-- local execution boundaries
-- clear error reporting
-- permission prompts for sensitive actions
-- no hidden background actions
-- no destructive actions without confirmation
+- Clear permission prompts for risky operations
+- No hidden background actions
+- No destructive actions without confirmation
+- Useful errors when a tool cannot run
+- Local execution boundaries that remain easy to inspect
 
-## Roadmap
-
-- Add more filesystem tools: read, search, copy, move, and create files
-- Add structured tool result formats
-- Add permission prompts for risky operations
-- Improve multi-step tool loops
-- Add local session history
-- Add richer tool status messages in the UI
-- Experiment with desktop and browser automation
-
-## Status
-
-Rectury is experimental and under active development. APIs, tool formats, and internal structure may change as the agent loop becomes more capable.
+Only run Rectury inside projects and directories you trust.
 
 ## Contributing
 
-Contributions are welcome.
+Rectury is early, so focused contributions can have a meaningful impact.
+Bug reports, architecture discussions, new tools, and UI improvements are
+welcome.
 
-If you'd like to help:
-
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
-
-Early feedback, bug reports, and architecture suggestions are also appreciated.
+1. Fork the repository.
+2. Create a feature branch.
+3. Make and test your changes.
+4. Open a pull request explaining what changed and why.
 
 ## License
 
-Rectury is released under the MIT License. See [LICENSE](LICENSE) for details.
+Rectury is available under the [MIT License](LICENSE).
