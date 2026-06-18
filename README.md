@@ -47,7 +47,7 @@ Rectury is built around a few core ideas:
 
 - Textual terminal interface
 - Streaming assistant responses
-- OpenAI-compatible client configured for xAI
+- OpenAI-compatible multi-provider client
 - Tool schemas loaded from JSON
 - Tool dispatch through a Python registry
 - Local `.env` configuration
@@ -56,17 +56,8 @@ Rectury is built around a few core ideas:
 
 ## Model Providers
 
-Rectury currently uses xAI models through an OpenAI-compatible API.
-
-Planned providers:
-
-- xAI (current)
-- OpenAI
-- Anthropic
-- Google Gemini
-- Local models (Ollama)
-
-The long-term goal is provider independence, allowing users to choose their preferred model.
+Rectury supports any provider that exposes an OpenAI-compatible API. Provider
+configuration is read directly from four environment variables.
 
 ## Current Tooling
 
@@ -97,7 +88,7 @@ Desktop automation, browser control, and advanced workflows are planned for futu
 ## Requirements
 
 - Python 3.10+
-- An xAI API key
+- An API key for your selected provider, or a local Ollama installation
 
 ## Installation
 
@@ -117,11 +108,39 @@ Create a local environment file:
 cp .env.example .env
 ```
 
-Add your API key:
+Configure these four values:
 
 ```env
-XAI_API_KEY=your_api_key_here
+AI_PROVIDER=xai
+AI_MODEL=grok-4.3
+AI_API_KEY=your_api_key_here
+AI_BASE_URL=https://api.x.ai/v1
 ```
+
+Examples:
+
+```env
+# OpenAI
+AI_PROVIDER=openai
+AI_MODEL=your-model-name
+AI_API_KEY=your_api_key_here
+AI_BASE_URL=https://api.openai.com/v1
+
+# OpenRouter
+AI_PROVIDER=openrouter
+AI_MODEL=provider/model-name
+AI_API_KEY=your_api_key_here
+AI_BASE_URL=https://openrouter.ai/api/v1
+
+# Local Ollama
+AI_PROVIDER=ollama
+AI_MODEL=qwen3
+AI_API_KEY=ollama
+AI_BASE_URL=http://localhost:11434/v1
+```
+
+`AI_PROVIDER` is used for identification and UI state. Requests are sent
+directly to `AI_BASE_URL` using `AI_MODEL` and `AI_API_KEY`.
 
 ## Usage
 
@@ -134,7 +153,7 @@ python3 agent.py
 ```text
 core/
   chat.py             Agent loop and streaming/tool handling
-  client.py           xAI/OpenAI-compatible client setup
+  client.py           OpenAI-compatible provider configuration
   tool_runner.py      Tool dispatch logic
 
 tools/

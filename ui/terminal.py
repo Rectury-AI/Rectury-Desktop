@@ -1,25 +1,61 @@
+from pathlib import Path
+
 from textual.app import App, ComposeResult
-from textual.widgets import Input, Static, Label
-from textual.containers import Horizontal, VerticalScroll
+from textual.widgets import Static, Label, TextArea
+from textual.containers import Horizontal, VerticalScroll, Vertical
 from core.chat import ChatSession
 from ui.theme import APP_CSS
 from textual import work
+from textual.binding import Binding
+
 class RecturyApp(App):
     CSS = APP_CSS
+    ALLOW_SELECT = False
     SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    BINDINGS = [
+        Binding("enter", "submit_message", "Send", show=False, priority=True),
+        Binding("ctrl+l", "insert_newline", "New line", show=False, priority=True),
+        Binding("ctrl+a", "select_input_all", "Select all", show=False, priority=True),
+    ]
 
     def compose(self) -> ComposeResult:
-        yield VerticalScroll(id="chat")
-
+        welcome_panel = Vertical(
+            Label("Rectury Agent  [dim]Experimental[/dim]", id="welcome-title"),
+            Label(
+                "Rectury can inspect files, use tools, run tasks, and help you "
+                "work across your system from the terminal.",
+                id="welcome-copy",
+            ),
+            Label(
+                "Review commands before execution and use Rectury only in "
+                "trusted projects.",
+                id="welcome-note",
+            ),
+            Label(" "),
+            Label("Workspace", id="agent-name"),
+            Label(f"~ {Path.cwd()}", id="status"),
+            id="welcome-panel",
+        )
+       
+        yield VerticalScroll(
+            welcome_panel,
+            id="chat",
+        )
         with Horizontal(id="input-row"):
             yield Static("❯", id="prompt")
-
-            yield Input(
-                placeholder="Ask anything... e.g., What is the capital of France?",
-                id="message-input"
+            yield TextArea(
+                placeholder="Ask anything...",
+                id="message-input",
+                soft_wrap=True,
+                show_line_numbers=False,
+                highlight_cursor_line=False,
             )
 
+    def set_status(self, status: str) -> None:
+        self.query_one("#status", Label).update(f"Status: {status}")
+
     @work(thread=True)
+
     def send_message_in_background(self, user_message, thinking_label, spinner_timer):
         assistant_message = ""
         started = False
@@ -41,16 +77,36 @@ class RecturyApp(App):
         thinking_label.update(f"{frame} Thinking...")
         self.spinner_index = (self.spinner_index + 1) % len(self.SPINNER_FRAMES)
     
-    def on_input_submitted(self, event: Input.Submitted):    
-        user_message = event.value.strip()
+    def action_insert_newline(self) -> None:
+        message_input = self.query_one("#message-input", TextArea)
+        message_input.insert("\n")
+
+    def on_text_area_changed(self, event: TextArea.Changed) -> None:
+        if event.text_area.id == "message-input":
+            self.call_after_refresh(self.resize_message_input)
+
+    def resize_message_input(self) -> None:
+        message_input = self.query_one("#message-input", TextArea)
+        input_row = self.query_one("#input-row", Horizontal)
+
+        content_height = max(1, min(6, message_input.wrapped_document.height))
+
+        message_input.styles.height = content_height
+        input_row.styles.height = content_height
+
+    def action_submit_message(self) -> None:
+        message_input = self.query_one("#message-input", TextArea)
+        user_message = message_input.text.strip()
 
         if not user_message:
             return
-        
-        event.input.value = ""
+
+        message_input.clear()
+        self.call_after_refresh(self.resize_message_input)
 
         chat = self.query_one("#chat", VerticalScroll)
         chat.mount(Label(user_message, classes="user-message"))
+
         thinking_label = Label("⠋ Thinking...", classes="assistant-message")
         chat.mount(thinking_label)
 
@@ -61,9 +117,12 @@ class RecturyApp(App):
         )
 
         chat.scroll_end(animate=False)
+        self.send_message_in_background(
+            user_message,
+            thinking_label,
+            spinner_timer,
+        )
 
-        self.send_message_in_background(user_message, thinking_label, spinner_timer)       
-    
     def on_mount(self) -> None:
         self.chat_session = ChatSession()
-        self.query_one("#message-input", Input).focus()
+        self.query_one("#message-input", TextArea).focus()

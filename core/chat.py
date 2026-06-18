@@ -1,60 +1,138 @@
 import json
 
-from core.tool_runner import run_tool
 from core.client import create_client
+from core.tool_runner import run_tool
+
 
 def load_tools():
-    with open("tools/schemas.json", "r", encoding="utf-8") as f:
-        return json.load(f)["tools"]
+    with open("tools/schemas.json", "r", encoding="utf-8") as file:
+        response_tools = json.load(file)["tools"]
 
-class ChatSession: 
+    return [
+        {
+            "type": "function",
+            "function": {
+                "name": tool["name"],
+                "description": tool.get("description", ""),
+                "parameters": tool.get("parameters", {"type": "object"}),
+            },
+        }
+        for tool in response_tools
+    ]
+
+
+class ChatSession:
+    MAX_TOOL_ROUNDS = 8
 
     def __init__(self):
-        self.client = create_client()
+        self.client, self.config = create_client()
         self.tools = load_tools()
         self.messages = [
-            {"role": "system", "content": "Your name is Rectury, you are a helpful assistant that can execute tools to help the user."}
+            {
+                "role": "system",
+                "content": (
+                    "Your name is Rectury. You are a helpful assistant that can "
+                    "execute tools to help the user. Never use Unicode or graphical "
+                ),
+            }
+        ]
+
+    def _stream_response(self):
+        stream = self.client.chat.completions.create(
+            model=self.config.model,
+            messages=self.messages,
+            tools=self.tools,
+            stream=True,
+        )
+
+        content_parts = []
+        tool_calls = {}
+
+        for chunk in stream:
+            if not chunk.choices:
+                continue
+
+            delta = chunk.choices[0].delta
+
+            if delta.content:
+                content_parts.append(delta.content)
+                yield delta.content
+
+            for tool_call in delta.tool_calls or []:
+                current = tool_calls.setdefault(
+                    tool_call.index,
+                    {
+                        "id": "",
+                        "type": "function",
+                        "function": {"name": "", "arguments": ""},
+                    },
+                )
+
+                if tool_call.id:
+                    current["id"] = tool_call.id
+                if tool_call.function:
+                    if tool_call.function.name:
+                        current["function"]["name"] += tool_call.function.name
+                    if tool_call.function.arguments:
+                        current["function"]["arguments"] += (
+                            tool_call.function.arguments
+                        )
+
+        return "".join(content_parts), [
+            tool_calls[index] for index in sorted(tool_calls)
         ]
 
     def send_message(self, user_input):
         self.messages.append({"role": "user", "content": user_input})
-        full_response = ""
-        tool_calls = []
+        final_content = ""
 
-        response = self.client.responses.create(
-            model="grok-4.3",
-            input=self.messages,
-            tools=self.tools,
-            stream=True
+        for _ in range(self.MAX_TOOL_ROUNDS):
+            stream = self._stream_response()
+
+            try:
+                while True:
+                    yield next(stream)
+            except StopIteration as completed:
+                content, tool_calls = completed.value
+
+            final_content += content
+            assistant_message = {
+                "role": "assistant",
+                "content": content or None,
+            }
+
+            if tool_calls:
+                assistant_message["tool_calls"] = tool_calls
+
+            self.messages.append(assistant_message)
+
+            if not tool_calls:
+                return
+
+            for tool_call in tool_calls:
+                function = tool_call["function"]
+
+                try:
+                    arguments = json.loads(function["arguments"] or "{}")
+                    result = run_tool(function["name"], arguments)
+                    output = json.dumps(result)
+                except Exception as error:
+                    output = json.dumps({"error": str(error)})
+
+                self.messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call["id"],
+                        "content": output,
+                    }
+                )
+
+        self.messages.append(
+            {
+                "role": "assistant",
+                "content": (
+                    "Tool execution stopped after reaching the maximum number "
+                    "of tool rounds."
+                ),
+            }
         )
-
-        for event in response:
-            if event.type == "response.output_text.delta":
-                full_response += event.delta
-                yield event.delta
-            elif event.type == "response.output_item.done":
-                item = event.item
-                if item.type == "function_call":
-                    tool_calls.append(item)
-
-        for tool_call in tool_calls:
-            arguments = json.loads(tool_call.arguments)
-            result = run_tool(tool_call.name, arguments)
-
-            self.messages.append(tool_call.model_dump())
-            self.messages.append({"type": "function_call_output", "call_id": tool_call.call_id, "output": json.dumps(result)})
-
-        if tool_calls:
-            response = self.client.responses.create(
-                model="grok-4.3",
-                input=self.messages,
-                tools=self.tools,
-                stream=True
-            )
-
-            for event in response:
-                if event.type == "response.output_text.delta":
-                    full_response += event.delta
-                    yield event.delta
-
-        self.messages.append({"role": "assistant", "content": full_response})
