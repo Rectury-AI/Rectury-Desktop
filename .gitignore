@@ -1,0 +1,67 @@
+# Variables de entorno y claves privadas
+.env
+.env.*
+!.env.example
+
+# Entornos virtuales
+.venv/
+.venv-build/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribución y compilación
+build/
+dist/
+release/
+*.egg-info/
+.eggs/
+
+# Node / frontend examples
+node_modules/
+examples/*/node_modules/
+examples/*/dist/
+examples/*/.vite/
+
+# Tests y cobertura
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Herramientas de análisis
+.mypy_cache/
+.ruff_cache/
+
+# IDEs y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Archivos temporales
+*.tmp
+*.temp
+.cache/
+
+# Sesiones o datos locales del agente
+sessions/
+data/
+.rectury/
+../RecturyWebsite
